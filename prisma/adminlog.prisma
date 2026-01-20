@@ -1,0 +1,25 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/adminlog"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("ADMINLOG_DATABASE_URL")
+}
+
+model AdminAuditLog {
+  Id               BigInt   @id @default(autoincrement()) @map("Id")
+  ActorAdminUserId String   @map("ActorAdminUserId") @db.NVarChar(128)
+  Action           String   @map("Action") @db.NVarChar(128)
+  Entity           String   @map("Entity") @db.NVarChar(128)
+  EntityId         String   @map("EntityId") @db.NVarChar(128)
+  BeforeJson       String?  @map("BeforeJson") @db.NVarChar(Max)
+  AfterJson        String?  @map("AfterJson") @db.NVarChar(Max)
+  Timestamp        DateTime @map("Timestamp") @db.DateTime
+  Ip               String?  @map("Ip") @db.NVarChar(64)
+  UserAgent        String?  @map("UserAgent") @db.NVarChar(256)
+  RequestId        String   @map("RequestId") @db.NVarChar(64)
+
+  @@map("AdminAuditLog")
+}
