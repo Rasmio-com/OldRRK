@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { JalaliDateField } from "@/components/ui/jalali-date-field";
 import { adminLog } from "@/lib/db/adminLog";
+import { maskSensitive } from "@/lib/audit/logger";
 
 export default async function UserDetailPage({ params }: { params: { id: string } }) {
   const session = await getSession();
@@ -70,6 +71,24 @@ export default async function UserDetailPage({ params }: { params: { id: string 
         take: 20
       })
     : [];
+
+  const parseAuditJson = (value: string) => {
+    try {
+      const parsed = JSON.parse(value);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+      return parsed as Record<string, unknown>;
+    } catch {
+      return null;
+    }
+  };
+
+  const formatAuditJson = (value: string | null, entity: string) => {
+    if (!value) return null;
+    const parsed = parseAuditJson(value);
+    if (!parsed) return "***";
+    const masked = maskSensitive(parsed, entity, ability);
+    return masked ? JSON.stringify(masked, null, 2) : null;
+  };
 
   return (
     <div className="space-y-6">
@@ -308,13 +327,13 @@ export default async function UserDetailPage({ params }: { params: { id: string 
                       <div>
                         <p className="text-xs text-slate-500">قبل</p>
                         <pre className="mt-1 whitespace-pre-wrap rounded bg-slate-50 p-2 text-xs">
-                          {log.BeforeJson ?? "-"}
+                          {formatAuditJson(log.BeforeJson, log.Entity) ?? "-"}
                         </pre>
                       </div>
                       <div>
                         <p className="text-xs text-slate-500">بعد</p>
                         <pre className="mt-1 whitespace-pre-wrap rounded bg-slate-50 p-2 text-xs">
-                          {log.AfterJson ?? "-"}
+                          {formatAuditJson(log.AfterJson, log.Entity) ?? "-"}
                         </pre>
                       </div>
                     </div>

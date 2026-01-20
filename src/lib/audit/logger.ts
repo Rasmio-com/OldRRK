@@ -31,7 +31,7 @@ export type AuditPayload = {
   userAgent?: string | null;
 };
 
-function maskSensitive(
+export function maskSensitive(
   data: Record<string, unknown> | null | undefined,
   entity: string,
   ability?: AppAbility
@@ -71,8 +71,8 @@ export async function logAdminAction(
       action: payload.action,
       entity: payload.entity,
       entityId: payload.entityId,
-      beforeJson: payload.before ? JSON.stringify(maskSensitive(payload.before, payload.entity, ability)) : null,
-      afterJson: payload.after ? JSON.stringify(maskSensitive(payload.after, payload.entity, ability)) : null,
+      beforeJson: payload.before ? JSON.stringify(payload.before) : null,
+      afterJson: payload.after ? JSON.stringify(payload.after) : null,
       timestamp: new Date(),
       ip: payload.ip ?? null,
       userAgent: payload.userAgent ?? null,
