@@ -1,125 +1,92 @@
-# تفکیک آگهی‌های **روزنامهٔ رسمی** (۱۳۰۷ تا ۱۳۸۱)
+# Admin Backoffice (Next.js + Prisma + CASL)
 
-این مخزن حاوی اسکریپت پایتونی است که نسخۀ اسکن‌شدۀ روزنامهٔ رسمی را—از **سال ۱۳۰۷ تا ۱۳۸۱ هجری خورشیدی**—به‌صورت کاملاً خودکار به **باکس‌های مجزای آگهی** تفکیک می‌کند.  
-تصاویر روزنامه‌های خام از درگاه _ocr.rrk.ir_ بارگیری و سپس این اسکریپت روی تصاویر خروجی اعمال می‌شود تا هر آگهی را به‌شکل تصویر جداگانه استخراج کند. در نهایت توسط سرویس **[scanify.ir](https://scanify.ir)** به متن تبدیل (OCR) شده‌اند.
+This repository contains a scalable admin/backoffice panel built with **Next.js App Router**, **Prisma (SQL Server)**, **CASL** authorization, **shadcn/ui + Tailwind**, and **Jalali calendar** support across the UI.
 
----
+## ✅ Why these dependencies
 
-## فهرست محتوا
+- **Next.js / React**: App Router, server actions, and route handlers for secure server-side mutations.
+- **Prisma ORM**: Models the main SQL Server database + a second AdminLog database.
+- **CASL**: Entity/field/function-level authorization enforced server-side.
+- **shadcn/ui + Tailwind**: Composable UI primitives for admin panels.
+- **react-multi-date-picker + jalaali-js + jalaliday**: Jalali pickers and Jalali date formatting.
+- **bcryptjs + jose**: Secure password hashing and HTTP-only session cookies.
+- **zod**: Schema validation for server actions.
 
-1. [پیش‌نیازها](#پیش‌نیازها)  
-2. [نصب](#نصب)  
-3. [ساختار پوشه‌ها](#ساختار-پوشه‌ها)  
-4. [نحوهٔ اجرا](#نحوهٔ-اجرا)  
-5. [پارامترهای کلیدی](#پارامترهای-کلیدی)  
-6. [معرفی الگوریتم](#معرفی-الگوریتم)  
-7. [نمونهٔ خروجی](#نمونهٔ-خروجی)  
-8. [مجوز](#مجوز)  
-9. [سپاس](#سپاس)
+## Project structure
 
----
-
-## پیش‌نیازها
-
-| نرم‌افزار | نسخهٔ پیشنهادشده |
-|-----------|------------------|
-| Python    | 3.9 یا بالاتر    |
-| OpenCV    | 4.x             |
-| NumPy     | 1.23+           |
-| scikit-learn | 1.4+         |
-| tqdm      | 4.66+           |
-
-> **نکته:** برای نصب سریع وابستگی‌ها می‌توانید از فایل `requirements.txt` (در صورت وجود) یا دستور زیر استفاده کنید:
-
-```bash
-pip install opencv-python-headless numpy scikit-learn tqdm
+```
+src/
+  app/
+    (auth)/login
+    (admin)/users
+    (admin)/roles
+  components/ui
+  lib/
+    acl
+    audit
+    auth
+    db
+    validation
+    date
+prisma/
 ```
 
+## Environment variables
 
-نصب
-```bash
-git clone https://github.com/<USER>/<REPO-NAME>.git
-cd <REPO-NAME>
-python -m venv .venv          # اختیاری ولی توصیه‌شده
-source .venv/bin/activate     # یا .venv\Scripts\activate در ویندوز
-pip install -r requirements.txt
+Create `.env` using the following values:
+
+```
+DATABASE_URL="sqlserver://USER:PASSWORD@HOST:PORT;database=MainDb;encrypt=true;trustServerCertificate=true"
+ADMINLOG_DATABASE_URL="sqlserver://USER:PASSWORD@HOST:PORT;database=AdminLog;encrypt=true;trustServerCertificate=true"
+AUTH_SECRET="replace-with-strong-random-secret"
 ```
 
+## Prisma schema (Main + AdminLog)
 
-## ساختار پوشه‌ها
+- Main database schema: `prisma/schema.prisma`
+- Admin log schema: `prisma/adminlog.prisma`
+
+Run generation/migrations:
+
 ```
-.
-├── input/          # تصاویر ورودی (سال/ماه/روز …)
-├── boxes/          # خروجی: برش باکسیِ هر تصویر
-├── result/         # خروجی: تصویر اصلی + مستطیل و شمارهٔ باکس‌ها
-├── src/            # فایل‌های کد (در صورت تفکیک ماژول‌ها)
-└── main.py         # نقطهٔ ورود (همین اسکریپت)
-```
-اسکریپت، پوشه‌های boxes/ و result/ را در صورت نبود، خود می‌سازد.
+# Generate Prisma clients (both databases)
+npm run prisma:generate
 
-نحوهٔ اجرا
+# Run migrations (main DB)
+npm run prisma:migrate
 
-```bash
-python main.py           # از ۱۳۸۱ تا ۱۳۰۷ (پیش‌فرض)
-```
-
-یا برای بازۀ دلخواه:
-
-```python
-START_YEAR = 1370
-END_YEAR   = 1360
-process_newspapers(START_YEAR, END_YEAR)
-آرگومان‌های قابل تغییر (در بالای فایل)
-ثابت	توضیح	مقدار پیش‌فرض
-INPUT_DIR	ریشۀ تصاویر ورودی	./input
-BOXES_DIR	ریشۀ ذخیرۀ باکس‌ها	./boxes
-RESULT_DIR	ریشۀ خروجی نهایی	./result
-…	سایر ثابت‌های پردازش تصویر	—
+# Run migrations (AdminLog DB)
+npm run prisma:migrate:adminlog
 ```
 
-## پارامترهای کلیدی
-نام متغیر	نقش	مقدار
-KSIZE	اندازهٔ کرنل سوبل	3
-THRESHOLD	آستانۀ هاف-لاین	26
-MIN_LINE_LENGTH	حداقل طول خط عمودی	191
-MIN_HORIZONTAL_LINE_LENGTH	حداقل طول خط افقی	140
-HORIZONTAL_DILATATION / VERTICAL_DILATATION	ضخیم‌سازی متن	5 / 9
-MAX_EXPANSION_DISTANCE	بیشینهٔ بُعد گسترش خط	50
+## Seed initial roles, permissions, and SuperUser
 
-برای دقت بیشتر می‌توانید این مقادیر را متناسب با رزولوشن تصاویرِ خود تنظیم کنید.
+```
+npm run seed
+```
 
-## معرفی الگوریتم
-### پیش‌پردازش
-تبدیل تصویر به خاکستری و محاسبهٔ گرادیان‌های سوبل (x و y).
+Default SuperUser credentials:
+- Username: `superuser`
+- Password: `ChangeMe123!`
 
-### تقویت خطوط
-آستانه‌گذاری اُتسو + عملیات باز (morph open) برای جداسازی خطوط افقی و عمودی.
+## Run the app
 
-### شناسایی خطوط
-هاف لاین + گسترش تطبیقی برای ترسیم خطوط کامل شبکه.
+```
+npm run dev
+```
 
-### حذف خطوط
-کم‌کردن خطوط از تصویر دودویی جهت حفظ تنها محتوای متنی.
+## Key security notes
 
-### ضخیم‌سازی و پرکردن متن
-اتساع (dilate) و پرکردن کانتور برای اتصال بخش‌های جدا افتاده.
+- **All authorization is enforced server-side** via CASL abilities built from DB permissions.
+- **Field-level access** is enforced by checking CASL fields in list/detail forms.
+- **Audit logging** writes to the AdminLog DB on every mutation.
+- **Session auth** uses HTTP-only cookies and signed JWTs.
 
-### ایجاد باکس اولیه
-رسم مستطیل دور هر کانتور و حذف تداخل با خطوط.
+## Key files (MVP)
 
-### فیلتر و مرتب‌سازی
-فیلترمند اندازه، نسبت طول‌به‌عرض و هم‌پوشانی؛ سپس خوشه‌بندی K-Means برای تشخیص ستون‌ها و مرتب‌سازی راست→چپ و بالا→پایین.
-
-### استخراج نهایی
-کشیدن مستطیل روی نسخهٔ رنگی تصویر و برش هر باکس در مسیر boxes/.
-
-### نمونهٔ خروجی
-تصویر اصلی با باکس‌ها	باکس‌های استخراج‌شده
-
-(تصاویر نمونه را در پوشهٔ docs/ قرار دهید.)
-
-## مجوز
-این پروژه تحت مجوز MIT منتشر شده است؛ برای اطلاعات بیشتر به فایل LICENSE رجوع کنید.
-
-## سپاس
-از **[وحید باقی](https://github.com/vahidbaghi)**  برای ایده‌ها و نوشتن کد، و همچنین از سرویس scanify.ir برای ارائهٔ OCR فارسی باکیفیت، صمیمانه تشکر می‌کنم. 🙏
+- Prisma schemas: `prisma/schema.prisma`, `prisma/adminlog.prisma`
+- Ability builder: `src/lib/acl/ability.ts`
+- Auth/session: `src/lib/auth/session.ts`
+- Audit logger: `src/lib/audit/logger.ts`
+- Users list & detail: `src/app/(admin)/users/page.tsx`, `src/app/(admin)/users/[id]/page.tsx`
+- Permissions UI: `src/app/(admin)/roles/page.tsx`, `src/app/(admin)/roles/[id]/page.tsx`
