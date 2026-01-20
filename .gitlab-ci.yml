@@ -1,0 +1,14 @@
+stages:
+  - build
+
+build:
+  image: node:20-alpine
+  stage: build
+  script:
+    - npm install
+    - npm run prisma:generate
+    - npm run build
+  cache:
+    key: ${CI_COMMIT_REF_SLUG}
+    paths:
+      - node_modules/

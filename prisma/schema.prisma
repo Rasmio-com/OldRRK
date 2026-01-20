@@ -1,0 +1,169 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/main"
+}
+
+datasource db {
+  provider = "sqlserver"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  Id                           BigInt   @id @map("Id")
+  UserName                     String?  @db.NVarChar(256)
+  NormalizedUserName           String?  @db.NVarChar(256)
+  Email                        String?  @db.NVarChar(256)
+  NormalizedEmail              String?  @db.NVarChar(256)
+  EmailConfirmed               Boolean? @db.Bit
+  PhoneNumber                  String?  @db.NVarChar(Max)
+  PhoneNumberConfirmed         Boolean? @db.Bit
+  JoinDate                     DateTime? @db.DateTime
+  UserNameOnSite               String?  @db.NVarChar(256)
+  SubscribeEmail               Boolean? @db.Bit
+  SubscribeSms                 Boolean? @db.Bit
+  ProfilePicture               String?  @db.NVarChar(512)
+  HasProfilePicture            Boolean? @db.Bit
+  PictureName                  String?  @db.NVarChar(256)
+  UserCountVisitCompanyPage    Int?     @db.Int
+  CompanyName                  String?  @db.NVarChar(256)
+  CompanyId                    BigInt?  @db.BigInt
+  Position                     String?  @db.NVarChar(256)
+  NationalCode                 String?  @db.VarChar(64)
+  Birthdate                    DateTime? @db.Date
+  Gender                       Boolean? @db.Bit
+  Education                    String?  @db.NVarChar(256)
+  NationalCodeConfirmed        Boolean? @db.Bit
+  TotalUserCountVisitCompanyPage Int?   @db.Int
+  TotalPersonPhoneVisit        BigInt?  @db.BigInt
+
+  NewPremium                   NewPremium?
+  SubPremiumAsFunctor          SubPremium[] @relation("FunctorUser")
+  SubPremiumAsTarget           SubPremium[] @relation("TargetUser")
+
+  @@map("Users")
+}
+
+model NewPremium {
+  Id               BigInt   @id @map("Id")
+  Until            DateTime? @db.DateTime
+  Package          Int?     @db.Int
+  NumberOfUser     Int?     @db.TinyInt
+  Description      String?  @db.NVarChar(Max)
+  StartDate        DateTime? @db.DateTime
+  OrganizationLogo String?  @db.NVarChar(Max)
+  OrganizationTitle String? @db.NVarChar(Max)
+  OrderId          BigInt?  @db.BigInt
+
+  User             User     @relation(fields: [Id], references: [Id])
+
+  @@map("NewPremium")
+}
+
+model NewPremiumLog {
+  Id           Int      @id @map("Id") @default(autoincrement())
+  InsertDate   DateTime? @db.DateTime
+  UserId       BigInt?  @db.BigInt
+  Until        DateTime? @db.DateTime
+  Package      Int?     @db.Int
+  NumberOfUser Int?     @db.TinyInt
+  Description  String?  @db.NVarChar(Max)
+  StartDate    DateTime? @db.DateTime
+  OrderId      BigInt?  @db.BigInt
+
+  @@map("NewPremiumLog")
+}
+
+model SubPremium {
+  Id            BigInt   @id @map("Id")
+  FunctorUserId BigInt?  @db.BigInt
+  TargetUserId  BigInt?  @db.BigInt
+  SetDate       DateTime? @db.DateTime
+  DeleteDate    DateTime? @db.DateTime
+
+  FunctorUser   User?    @relation("FunctorUser", fields: [FunctorUserId], references: [Id])
+  TargetUser    User?    @relation("TargetUser", fields: [TargetUserId], references: [Id])
+
+  @@map("SubPremium")
+}
+
+model Api {
+  Id            String   @id @map("Id") @db.NVarChar(128)
+  ApiUntil      DateTime? @db.DateTime
+  ApiKey        String?  @db.UniqueIdentifier
+  ApiTotalLimit Int?     @db.Int
+  ApiDailyLimit Int?     @db.Int
+  ApiTotalUsed  Int?     @db.Int
+  ApiTodayUsed  Int?     @db.Int
+  ApiStartAccess DateTime? @db.DateTime
+  ApiType       Int?     @db.Int
+  Email         String?  @db.NVarChar(256)
+  Price         Int?     @db.Int
+  Title         String?  @db.NVarChar(256)
+  UserId        BigInt?  @db.BigInt
+
+  @@map("Api")
+}
+
+model UserOTP {
+  Id          BigInt   @id @map("Id")
+  UserName    String?  @db.NVarChar(256)
+  Code        String?  @db.NVarChar(64)
+  DateTime    DateTime? @db.DateTime
+  Ip          String?  @db.VarChar(64)
+  FailureCount Int?    @db.TinyInt
+  Used        Boolean? @db.Bit
+
+  @@map("UserOTP")
+}
+
+model AdminUser {
+  Id           BigInt   @id @default(autoincrement()) @map("Id")
+  UserName     String   @db.NVarChar(256)
+  Email        String?  @db.NVarChar(256)
+  PasswordHash String   @db.NVarChar(512)
+  DisplayName  String?  @db.NVarChar(256)
+  IsActive     Boolean  @default(true) @db.Bit
+  CreatedAt    DateTime @default(now()) @db.DateTime
+
+  Roles        AdminUserRole[]
+
+  @@map("AdminUsers")
+}
+
+model Role {
+  Id          BigInt   @id @default(autoincrement()) @map("Id")
+  Name        String   @unique @db.NVarChar(128)
+  Description String?  @db.NVarChar(256)
+  CreatedAt   DateTime @default(now()) @db.DateTime
+
+  Users       AdminUserRole[]
+  Permissions Permission[]
+
+  @@map("Roles")
+}
+
+model AdminUserRole {
+  AdminUserId BigInt @map("AdminUserId")
+  RoleId      BigInt @map("RoleId")
+
+  AdminUser   AdminUser @relation(fields: [AdminUserId], references: [Id])
+  Role        Role      @relation(fields: [RoleId], references: [Id])
+
+  @@id([AdminUserId, RoleId])
+  @@map("AdminUserRoles")
+}
+
+model Permission {
+  Id         BigInt   @id @default(autoincrement()) @map("Id")
+  RoleId     BigInt   @map("RoleId")
+  Entity     String   @map("Entity") @db.NVarChar(128)
+  Action     String   @map("Action") @db.NVarChar(64)
+  Fields     Json?    @map("Fields")
+  Conditions Json?    @map("Conditions")
+  Inverted   Boolean  @default(false) @map("Inverted") @db.Bit
+  CreatedAt  DateTime @default(now()) @map("CreatedAt") @db.DateTime
+
+  Role       Role     @relation(fields: [RoleId], references: [Id])
+
+  @@map("Permission")
+}
