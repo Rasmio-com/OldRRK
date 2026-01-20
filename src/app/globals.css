@@ -1,6 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@config "../../tailwind.config.ts";
 
 @import "react-multi-date-picker/styles/colors/teal.css";
 
@@ -27,7 +26,9 @@
   --radius: 0.75rem;
 }
 
-body {
-  @apply bg-background text-foreground;
-  font-family: var(--font-vazirmatn), system-ui, sans-serif;
+@layer base {
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-vazirmatn), system-ui, sans-serif;
+  }
 }
